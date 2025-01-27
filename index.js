@@ -19,7 +19,6 @@ const port = process.env.PORT || 3000;
 
 
 
-
 app.get("/users", async (req, res) => {
     const [result, fields] = await connection.query("SELECT * FROM user");
     res.json(result);
@@ -64,14 +63,13 @@ app.get("/post", async (req, res) => {
         `);
     res.json(result);
 });
-app.get("/thepost", async (req, res) => {
-    const [result] = await connection.query(`
-        SELECT * FROM comment WHERE post_id = 1;
-
-        `);
-    res.json(result);
-});
-
+// app.get("/thepost", async (req, res) => {
+//     const [result] = await connection.query(`
+//         SELECT * FROM comment WHERE post_id = 1;
+//
+//         `);
+//     res.json(result);
+// });
 
 app.get("/post/:id", async (req, res) => {
     const postId = req.params.id;
@@ -101,8 +99,6 @@ app.get("/post/:id", async (req, res) => {
             [postId]
         );
 
-
-
         res.json({
             ...post,
             comments: commentsResult,
@@ -113,7 +109,6 @@ app.get("/post/:id", async (req, res) => {
     }
 });
 
-// Handle POST request to add a new comment
 app.post("/post/:id/comment", async (req, res) => {
     const postId = req.params.id;
     const { content } = req.body;
@@ -123,19 +118,18 @@ app.post("/post/:id/comment", async (req, res) => {
     }
 
     try {
-        // Assuming you're inserting the comment into the 'comment' table
         const [result] = await connection.query(
             `INSERT INTO comment (content, post_id, user_id) 
              VALUES (?, ?, ?)`,
-            [content, postId, 1] // Replace '1' with the actual user ID
+            [content, postId, 1]
         );
 
-        // Return the newly added comment (optional, depending on your use case)
+
         res.status(201).json({
             id: result.insertId,
             content: content,
             post_id: postId,
-            user_id: 1, // Replace with actual user ID
+            user_id: 1,
         });
     } catch (error) {
         console.error('Error adding comment:', error);
