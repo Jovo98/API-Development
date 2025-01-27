@@ -64,31 +64,119 @@ app.get("/post", async (req, res) => {
         `);
     res.json(result);
 });
+app.get("/thepost", async (req, res) => {
+    const [result] = await connection.query(`
+        SELECT * FROM comment WHERE post_id = 1;
 
-app.get("/test", async (req, res) => {
-    const sort = req.query.sort || "id";
-    const sortOrder = req.query.sortOrder || "ASC";
-    //http://localhost:1337/test?sort=id&sortOrder=DESC
-    const [result] = await connection.query(
-        `SELECT * FROM test ORDER BY ${sort} ${sortOrder}`
-    );
+        `);
     res.json(result);
 });
 
-app.get("/test/:id", async (req, res) => {
-    const { id } = req.params;
-    const [result] = await connection.query("SELECT * FROM test WHERE id=" + id);
-    res.json(result);
+
+app.get("/post/:id", async (req, res) => {
+    const postId = req.params.id;
+
+    try {
+        const [postResult] = await connection.query(
+            `SELECT * FROM post WHERE id = ?`,
+            [postId]
+        );
+
+        if (postResult.length === 0) {
+            console.log(`No post found with id ${postId}`);
+            return res.status(404).json({ error: "Post not found" });
+        }
+        const post = postResult[0];
+        console.log("Post:", post);
+
+        const [commentsResult] = await connection.query(
+            `SELECT 
+                c.id AS comment_id, 
+                c.content AS comment_content, 
+                u.name AS user_name, 
+                u.email AS user_email 
+             FROM comment c 
+             LEFT JOIN user u ON c.user_id = u.id 
+             WHERE c.post_id = ?`,
+            [postId]
+        );
+
+
+
+        res.json({
+            ...post,
+            comments: commentsResult,
+        });
+    } catch (error) {
+        console.error("Error fetching post details:", error.message, error.stack);
+        res.status(500).json({ error: "Failed to fetch post details" });
+    }
 });
 
-app.post("/test", async (req, res) => {
+// Handle POST request to add a new comment
+app.post("/post/:id/comment", async (req, res) => {
+    const postId = req.params.id;
     const { content } = req.body;
-    const [result] = await connection.query(
-        `INSERT INTO test(content) VALUES (?);`,
-        [content]
-    );
-    res.send("success");
+
+    if (!content || content.trim() === '') {
+        return res.status(400).json({ error: 'Content cannot be empty' });
+    }
+
+    try {
+        // Assuming you're inserting the comment into the 'comment' table
+        const [result] = await connection.query(
+            `INSERT INTO comment (content, post_id, user_id) 
+             VALUES (?, ?, ?)`,
+            [content, postId, 1] // Replace '1' with the actual user ID
+        );
+
+        // Return the newly added comment (optional, depending on your use case)
+        res.status(201).json({
+            id: result.insertId,
+            content: content,
+            post_id: postId,
+            user_id: 1, // Replace with actual user ID
+        });
+    } catch (error) {
+        console.error('Error adding comment:', error);
+        res.status(500).json({ error: 'Failed to add comment' });
+    }
 });
+
+
+
+app.get("/comments", async (req, res) => {
+    const [result] = await connection.query(`
+        SELECT * FROM comment
+        `);
+    res.json(result);
+});
+
+
+// app.get("/test", async (req, res) => {
+//     const sort = req.query.sort || "id";
+//     const sortOrder = req.query.sortOrder || "ASC";
+//     //http://localhost:1337/test?sort=id&sortOrder=DESC
+//     const [result] = await connection.query(
+//         `SELECT * FROM test ORDER BY ${sort} ${sortOrder}`
+//     );
+//     res.json(result);
+// });
+//
+// app.get("/test/:id", async (req, res) => {
+//     const { id } = req.params;
+//     const [result] = await connection.query("SELECT * FROM test WHERE id=" + id);
+//     res.json(result);
+// });
+//
+// app.post("/test", async (req, res) => {
+//     const { content } = req.body;
+//     const [result] = await connection.query(
+//         `INSERT INTO test(content) VALUES (?);`,
+//         [content]
+//     );
+//     res.send("success");
+// });
 
 app.listen(port, () => {
     console.log("Server started on port: ", port);
