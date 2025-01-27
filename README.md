@@ -1,7 +1,7 @@
 # API-Development  
 Jo's API Development Assignment
 
-Link to live site: [PostSite](https://api-development-one.vercel.app/index.html)
+Link to live demo: [PostSite](https://api-development-one.vercel.app/index.html)
 
 ## Table of Contents
 
